@@ -1,9 +1,9 @@
+use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::process::{Command, Stdio};
 use std::os::fd::IntoRawFd;
-use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 struct SingleCommand {
     tokens: Vec<String>,
@@ -75,17 +75,16 @@ fn is_operator(token: &str) -> bool {
     return false;
 }
 
-fn execute_command(command: SingleCommand){
+fn execute_command(command: SingleCommand) {
     let mut handles = vec![];
-    
+
     let stdout_handle: Stdio = if command.directed_output {
-        let file_path = command.output_filename.unwrap(); 
+        let file_path = command.output_filename.unwrap();
         let file = File::create(&file_path).unwrap();
         Stdio::from(file)
     } else {
         Stdio::inherit()
     };
-
 
     let result = Command::new(command.tokens[0].as_str())
         .args(&command.tokens[1..])
