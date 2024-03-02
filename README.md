@@ -1,4 +1,4 @@
 # crush
 Crush (AKA Cade's Rust SHell) is a rust implementation of a modern shell.
 
-[![Github CI](https://github.com/cadejacobson/crush/actions/workflows/ci.yaml/badge.svg)](https://github.com/cadejacobson/crush/actions)
+[![Github CI](https://github.com/cadejacobson/crush/actions/workflows/rust.yml/badge.svg)](https://github.com/cadejacobson/crush/actions)
