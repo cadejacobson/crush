@@ -1,0 +1,8 @@
+Cargo.lock
+Cargo.toml
+LICENSE
+README.md
+ls.txt
+src
+stdout
+target
