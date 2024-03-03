@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::os::fd::IntoRawFd;
-use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 struct SingleCommand {
@@ -60,9 +58,6 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
         }
         i += 1;
     }
-
-    println!("{}", command.directed_output);
-    println!("{:?}", command.output_filename);
 
     return command;
 }

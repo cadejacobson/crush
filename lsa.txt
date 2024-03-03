@@ -1,0 +1,15 @@
+.
+..
+.git
+.github
+.gitignore
+Cargo.lock
+Cargo.toml
+LICENSE
+README.md
+ls.txt
+lsa.txt
+src
+stdout
+target
+u.txt
