@@ -6,7 +6,9 @@ use std::process::{Command, Stdio};
 struct SingleCommand {
     tokens: Vec<String>,
     output_filename: Option<String>,
+    input_filename: Option<String>,
     directed_output: bool,
+    directed_input: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -40,7 +42,9 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
     let mut command = SingleCommand {
         tokens: vec![],
         output_filename: None,
+        input_filename: None,
         directed_output: false,
+        directed_input: false
     };
 
     let len = tokens.len();
@@ -53,6 +57,13 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
                 command.output_filename = Some(tokens[i + 1].to_owned());
                 i += 1;
             }
+        }
+        else if tokens[i] == "<" {
+            command.directed_input = true;
+            if (i + 1) < len && !is_operator(tokens[i + 1]) {
+                command.input_filename = Some(tokens[i + 1].to_owned());
+                i += 1;
+            }
         } else {
             command.tokens.push(tokens[i].to_owned());
         }
@@ -63,7 +74,7 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
 }
 
 fn is_operator(token: &str) -> bool {
-    if token == ">" {
+    if token == ">" || token == "<"{
         return true;
     }
 
@@ -74,15 +85,24 @@ fn execute_command(command: SingleCommand) {
     let mut handles = vec![];
 
     let stdout_handle: Stdio = if command.directed_output {
-        let file_path = command.output_filename.unwrap();
-        let file = File::create(&file_path).unwrap();
-        Stdio::from(file)
+        let output_file_path = command.output_filename.unwrap();
+        let output_file = File::create(&output_file_path).unwrap();
+        Stdio::from(output_file)
+    } else {
+        Stdio::inherit()
+    };
+
+    let stdin_handle: Stdio = if command.directed_input {
+        let input_file_path = command.input_filename.unwrap();
+        let input_file = File::open(&input_file_path).unwrap();
+        Stdio::from(input_file)
     } else {
         Stdio::inherit()
     };
 
     let result = Command::new(command.tokens[0].as_str())
         .args(&command.tokens[1..])
+        .stdin(Stdio::from(stdin_handle))
         .stdout(Stdio::from(stdout_handle))
         .spawn();
 
