@@ -1,7 +1,7 @@
 use std::fs::File;
-use std::io;
 use std::io::Write;
 use std::process::{Command, Stdio};
+use std::{env, io};
 
 struct SingleCommand {
     tokens: Vec<String>,
@@ -13,7 +13,14 @@ struct SingleCommand {
 
 fn main() -> io::Result<()> {
     loop {
-        print!("crush: > ");
+        let current_dir = match env::current_dir() {
+            Ok(current_dir) => current_dir,
+            Err(e) => {
+                eprintln!("Failed to get current working directory: {}", e);
+                return Err(e);
+            }
+        };
+        print!("crush: {} > ", current_dir.display());
         io::stdout().flush().expect("Failed to flush stdout");
 
         let mut user_input = String::new();
@@ -44,7 +51,7 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
         output_filename: None,
         input_filename: None,
         directed_output: false,
-        directed_input: false
+        directed_input: false,
     };
 
     let len = tokens.len();
@@ -57,8 +64,7 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
                 command.output_filename = Some(tokens[i + 1].to_owned());
                 i += 1;
             }
-        }
-        else if tokens[i] == "<" {
+        } else if tokens[i] == "<" {
             command.directed_input = true;
             if (i + 1) < len && !is_operator(tokens[i + 1]) {
                 command.input_filename = Some(tokens[i + 1].to_owned());
@@ -74,7 +80,7 @@ fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
 }
 
 fn is_operator(token: &str) -> bool {
-    if token == ">" || token == "<"{
+    if token == ">" || token == "<" {
         return true;
     }
 
