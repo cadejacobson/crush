@@ -30,18 +30,23 @@ fn main() -> io::Result<()> {
 
         let user_input = user_input.trim();
 
-        if user_input == "exit" {
-            return Ok(());
-        }
-
         if user_input == "" {
             continue;
         }
 
-        let tokens: Vec<&str> = user_input.split_whitespace().collect();
-        let single_command = parse_user_input(tokens.clone());
+        if user_input == "exit" {
+            return Ok(());
+        }
 
-        let _ = execute_command(single_command);
+        let tokens: Vec<&str> = user_input.split_whitespace().collect();
+        let command = parse_user_input(tokens.clone());
+
+        if command.tokens[0] == "cd" {
+            change_dir(command);
+            continue;
+        }
+
+        let _ = execute_command(command);
     }
 }
 
@@ -129,5 +134,16 @@ fn execute_command(command: SingleCommand) {
         if let Err(err) = handle.wait() {
             eprintln!("Failed to wait for command to finish: {}", err);
         }
+    }
+}
+
+fn change_dir(command: SingleCommand){
+    if command.tokens.len() != 2 {
+        println!("Incorrect amount of arguments for this function");
+        return;
+    }
+
+    if let Err(e) = env::set_current_dir(command.tokens[1].as_str()) {
+        eprintln!("Error: {}", e);
     }
 }
