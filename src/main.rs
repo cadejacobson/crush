@@ -3,10 +3,13 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 use std::{env, io};
 
+#[derive(Clone)]
 struct SingleCommand {
     tokens: Vec<String>,
     output_filename: Option<String>,
     input_filename: Option<String>,
+    piped_input: bool,
+    piped_output: bool,
     directed_output: bool,
     directed_input: bool,
 }
@@ -39,53 +42,79 @@ fn main() -> io::Result<()> {
         }
 
         let tokens: Vec<&str> = user_input.split_whitespace().collect();
-        let command = parse_user_input(tokens.clone());
+        let commands = parse_user_input(tokens.clone());
 
-        if command.tokens[0] == "cd" {
-            change_dir(command);
+        if commands[0].tokens[0] == "cd" {
+            change_dir(commands[0].clone());
             continue;
         }
 
-        let _ = execute_command(command);
+        for command in commands{
+            let _ = execute_command(command);
+        }
+
     }
 }
 
-fn parse_user_input(tokens: Vec<&str>) -> SingleCommand {
-    let mut command = SingleCommand {
-        tokens: vec![],
-        output_filename: None,
-        input_filename: None,
-        directed_output: false,
-        directed_input: false,
-    };
+fn parse_user_input(tokens: Vec<&str>) -> Vec<SingleCommand> {
+    let mut commands = Vec::new();  
 
     let len = tokens.len();
     let mut i = 0;
+    let mut pipe_next_input = false;
 
     while i < len {
-        if tokens[i] == ">" {
-            command.directed_output = true;
-            if (i + 1) < len && !is_operator(tokens[i + 1]) {
-                command.output_filename = Some(tokens[i + 1].to_owned());
-                i += 1;
-            }
-        } else if tokens[i] == "<" {
-            command.directed_input = true;
-            if (i + 1) < len && !is_operator(tokens[i + 1]) {
-                command.input_filename = Some(tokens[i + 1].to_owned());
-                i += 1;
-            }
-        } else {
-            command.tokens.push(tokens[i].to_owned());
+        let mut command = SingleCommand {
+            tokens: vec![],
+            output_filename: None,
+            input_filename: None,
+            piped_input: false,
+            piped_output: false,
+            directed_output: false,
+            directed_input: false,
+        };
+
+        if pipe_next_input{
+            command.piped_input = true;
         }
-        i += 1;
+
+        pipe_next_input = false;
+
+        while i < len && tokens[i] != "|" {
+            if tokens[i] == ">" {
+                command.directed_output = true;
+                if (i + 1) < len && !is_operator(tokens[i + 1]) {
+                    command.output_filename = Some(tokens[i + 1].to_owned());
+                    i += 1;
+                }
+            } else if tokens[i] == "<" {
+                command.directed_input = true;
+                if (i + 1) < len && !is_operator(tokens[i + 1]) {
+                    command.input_filename = Some(tokens[i + 1].to_owned());
+                    i += 1;
+                }
+            } else {
+                command.tokens.push(tokens[i].to_owned());
+            }
+            i += 1;
+        }
+
+        if i != len{
+            if tokens[i] == "|" {
+                command.piped_output = true;
+                pipe_next_input = true;
+                i += 1;
+            }
+        }
+
+        commands.push(command)
     }
 
-    return command;
+    return commands;
 }
 
 fn is_operator(token: &str) -> bool {
-    if token == ">" || token == "<" {
+    if token == ">" || token == "<" || token == "|"{
         return true;
     }
 
