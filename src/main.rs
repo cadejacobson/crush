@@ -1,4 +1,5 @@
 use crossterm::event::{self, Event, KeyCode};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::fs::File;
 use std::io::Write;
 use std::process::{Child, Command, Stdio};
@@ -44,17 +45,26 @@ fn main() -> io::Result<()> {
 
         let mut user_input = String::new();
 
+        enable_raw_mode().expect("Failed to enable raw mode");
         loop {
             if let Ok(event) = rx.recv() {
                 match event.code {
                     KeyCode::Enter => {
+                        print!("\n\r\x1B[K");
+                        io::stdout().flush().expect("Failed to flush stdout");
                         break;
                     }
                     KeyCode::Backspace => {
                         user_input.pop();
+                        print!("\r\x1B[K");
+                        print!("crush: {} > {}", current_dir.display(), user_input);
+                        io::stdout().flush().expect("Failed to flush stdout");
                     }
                     KeyCode::Char(c) => {
                         user_input.push(c);
+                        print!("\r\x1B[K");
+                        print!("crush: {} > {}", current_dir.display(), user_input);
+                        io::stdout().flush().expect("Failed to flush stdout");
                     }
                     KeyCode::Up => {
                         if input_history_index < user_input_history.len() - 1 {
@@ -62,6 +72,7 @@ fn main() -> io::Result<()> {
                             // function to delete line
                             println!("Up!");
                         }
+                        println!("Here");
                     }
                     KeyCode::Down => {
                         if input_history_index > 0 {
@@ -69,12 +80,15 @@ fn main() -> io::Result<()> {
                             // function to delete line
                             println!("Down!");
                         }
+                        println!("Here");
                     }
 
                     _ => {}
                 }
             }
         }
+        disable_raw_mode().expect("Failed to disable raw mode");
+
 
         let user_input = user_input.trim();
 
@@ -98,7 +112,7 @@ fn main() -> io::Result<()> {
 
         user_input_history.push(user_input.to_owned());
         input_history_index = user_input_history.len() - 1;
-        println!("index = {}", input_history_index);
+        //println!("index = {}", input_history_index);
     }
 }
 
