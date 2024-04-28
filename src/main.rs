@@ -20,7 +20,7 @@ struct SingleCommand {
 
 fn main() -> io::Result<()> {
     let mut user_input_history: Vec<String> = Vec::new();
-    let mut _input_history_index: usize;
+    let mut input_history_index: usize = 0;
 
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || loop {
@@ -48,7 +48,6 @@ fn main() -> io::Result<()> {
             if let Ok(event) = rx.recv() {
                 match event.code {
                     KeyCode::Enter => {
-                        println!();
                         break;
                     }
                     KeyCode::Backspace => {
@@ -57,6 +56,21 @@ fn main() -> io::Result<()> {
                     KeyCode::Char(c) => {
                         user_input.push(c);
                     }
+                    KeyCode::Up => {
+                        if input_history_index < user_input_history.len() - 1 {
+                            input_history_index = input_history_index + 1;
+                            // function to delete line
+                            println!("Up!");
+                        }
+                    }
+                    KeyCode::Down => {
+                        if input_history_index > 0 {
+                            input_history_index = input_history_index - 1;
+                            // function to delete line
+                            println!("Down!");
+                        }
+                    }
+
                     _ => {}
                 }
             }
@@ -83,6 +97,8 @@ fn main() -> io::Result<()> {
         let _ = execute_commands(commands);
 
         user_input_history.push(user_input.to_owned());
+        input_history_index = user_input_history.len() - 1;
+        println!("index = {}", input_history_index);
     }
 }
 
