@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::Write;
-use std::process::{Command, Stdio, Child};
+use std::process::{Child, Command, Stdio};
 use std::{env, io};
 
 #[derive(Clone)]
@@ -8,10 +8,10 @@ struct SingleCommand {
     tokens: Vec<String>,
     output_filename: Option<String>,
     input_filename: Option<String>,
-    piped_input: bool,                  /* For the pipe operator | */
-    piped_output: bool,                 /* For the pipe operator | */
-    directed_output: bool,              /* For the file operator > */
-    directed_input: bool,               /* For the file operator > */
+    piped_input: bool,     /* For the pipe operator | */
+    piped_output: bool,    /* For the pipe operator | */
+    directed_output: bool, /* For the file operator > */
+    directed_input: bool,  /* For the file operator > */
 }
 
 fn main() -> io::Result<()> {
@@ -50,12 +50,11 @@ fn main() -> io::Result<()> {
         }
 
         let _ = execute_commands(commands);
-
     }
 }
 
 fn parse_user_input(tokens: Vec<&str>) -> Vec<SingleCommand> {
-    let mut commands = Vec::new();  
+    let mut commands = Vec::new();
 
     let len = tokens.len();
     let mut i = 0;
@@ -72,7 +71,7 @@ fn parse_user_input(tokens: Vec<&str>) -> Vec<SingleCommand> {
             directed_input: false,
         };
 
-        if pipe_next_input{
+        if pipe_next_input {
             command.piped_input = true;
         }
 
@@ -97,7 +96,7 @@ fn parse_user_input(tokens: Vec<&str>) -> Vec<SingleCommand> {
             i += 1;
         }
 
-        if i != len{
+        if i != len {
             if tokens[i] == "|" {
                 command.piped_output = true;
                 pipe_next_input = true;
@@ -112,7 +111,7 @@ fn parse_user_input(tokens: Vec<&str>) -> Vec<SingleCommand> {
 }
 
 fn is_operator(token: &str) -> bool {
-    if token == ">" || token == "<" || token == "|"{
+    if token == ">" || token == "<" || token == "|" {
         return true;
     }
 
@@ -122,35 +121,33 @@ fn is_operator(token: &str) -> bool {
 fn execute_commands(commands: Vec<SingleCommand>) {
     let mut handles: Vec<Child> = vec![];
 
-    for i in 0..commands.len(){
+    for i in 0..commands.len() {
         let stdin_handle: Stdio = if commands[i].directed_input {
             let input_file_path = commands[i].input_filename.as_ref().unwrap();
             let input_file = File::open(&input_file_path).unwrap();
             Stdio::from(input_file)
         } else if commands[i].piped_input {
             Stdio::from(handles[i - 1].stdout.take().unwrap())
-        }  
-        else {
+        } else {
             Stdio::inherit()
         };
-     
+
         let stdout_handle: Stdio = if commands[i].directed_output {
             let output_file_path = commands[i].output_filename.as_ref().unwrap();
             let output_file = File::create(&output_file_path).unwrap();
             Stdio::from(output_file)
-        }
-        else if commands[i].piped_output {
+        } else if commands[i].piped_output {
             Stdio::piped()
         } else {
             Stdio::inherit()
         };
-    
+
         let result = Command::new(commands[i].tokens[0].as_str())
             .args(&commands[i].tokens[1..])
             .stdin(Stdio::from(stdin_handle))
             .stdout(Stdio::from(stdout_handle))
             .spawn();
-    
+
         match result {
             Ok(handle) => {
                 handles.push(handle);
@@ -164,7 +161,7 @@ fn execute_commands(commands: Vec<SingleCommand>) {
             }
         };
     }
-    
+
     for mut handle in handles {
         if let Err(err) = handle.wait() {
             eprintln!("Failed to wait for command to finish: {}", err);
@@ -172,7 +169,7 @@ fn execute_commands(commands: Vec<SingleCommand>) {
     }
 }
 
-fn change_dir(command: SingleCommand){
+fn change_dir(command: SingleCommand) {
     if command.tokens.len() != 2 {
         println!("Incorrect amount of arguments for this function");
         return;
