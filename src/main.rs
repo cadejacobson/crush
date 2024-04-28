@@ -1,6 +1,10 @@
+use crossterm::event::{self, Event, KeyCode};
 use std::fs::File;
 use std::io::Write;
 use std::process::{Child, Command, Stdio};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
 use std::{env, io};
 
 #[derive(Clone)]
@@ -15,6 +19,18 @@ struct SingleCommand {
 }
 
 fn main() -> io::Result<()> {
+    let mut user_input_history: Vec<String> = Vec::new();
+    let mut _input_history_index: usize;
+
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || loop {
+        if event::poll(Duration::from_millis(50)).unwrap() {
+            if let Event::Key(event) = event::read().unwrap() {
+                tx.send(event).unwrap();
+            }
+        }
+    });
+
     loop {
         let current_dir = match env::current_dir() {
             Ok(current_dir) => current_dir,
@@ -27,9 +43,24 @@ fn main() -> io::Result<()> {
         io::stdout().flush().expect("Failed to flush stdout");
 
         let mut user_input = String::new();
-        io::stdin()
-            .read_line(&mut user_input)
-            .expect("Failed to read input");
+
+        loop {
+            if let Ok(event) = rx.recv() {
+                match event.code {
+                    KeyCode::Enter => {
+                        println!();
+                        break;
+                    }
+                    KeyCode::Backspace => {
+                        user_input.pop();
+                    }
+                    KeyCode::Char(c) => {
+                        user_input.push(c);
+                    }
+                    _ => {}
+                }
+            }
+        }
 
         let user_input = user_input.trim();
 
@@ -50,6 +81,8 @@ fn main() -> io::Result<()> {
         }
 
         let _ = execute_commands(commands);
+
+        user_input_history.push(user_input.to_owned());
     }
 }
 
