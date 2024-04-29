@@ -67,20 +67,22 @@ fn main() -> io::Result<()> {
                         io::stdout().flush().expect("Failed to flush stdout");
                     }
                     KeyCode::Up => {
-                        if input_history_index < user_input_history.len() - 1 {
-                            input_history_index = input_history_index + 1;
-                            // function to delete line
-                            println!("Up!");
-                        }
-                        println!("Here");
-                    }
-                    KeyCode::Down => {
                         if input_history_index > 0 {
                             input_history_index = input_history_index - 1;
-                            // function to delete line
-                            println!("Down!");
+                            user_input = user_input_history[input_history_index].to_owned();
+                            print!("\r\x1B[K");
+                            print!("crush: {} > {}", current_dir.display(), user_input);
+                            io::stdout().flush().expect("Failed to flush stdout");
                         }
-                        println!("Here");
+                    }
+                    KeyCode::Down => {
+                        if input_history_index < user_input_history.len() - 1 {
+                            input_history_index = input_history_index + 1;
+                            user_input = user_input_history[input_history_index].to_owned();
+                            print!("\r\x1B[K");
+                            print!("crush: {} > {}", current_dir.display(), user_input);
+                            io::stdout().flush().expect("Failed to flush stdout");
+                        }
                     }
 
                     _ => {}
@@ -111,7 +113,7 @@ fn main() -> io::Result<()> {
         let _ = execute_commands(commands);
 
         user_input_history.push(user_input.to_owned());
-        input_history_index = user_input_history.len() - 1;
+        input_history_index = user_input_history.len();
         //println!("index = {}", input_history_index);
     }
 }
