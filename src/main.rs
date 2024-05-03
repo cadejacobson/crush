@@ -114,7 +114,6 @@ fn main() -> io::Result<()> {
 
         user_input_history.push(user_input.to_owned());
         input_history_index = user_input_history.len();
-        //println!("index = {}", input_history_index);
     }
 }
 
@@ -242,5 +241,25 @@ fn change_dir(command: SingleCommand) {
 
     if let Err(e) = env::set_current_dir(command.tokens[1].as_str()) {
         eprintln!("Error: {}", e);
+    }
+}
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_parse_user_input() {
+        let user_input_test = "ls | grep test";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        assert_eq!(commands.len(), 2);
+        assert_eq!(commands[0].tokens, vec!["ls"]);
+        assert_eq!(commands[0].piped_output, true);
+        assert_eq!(commands[0].piped_input, false);
+        assert_eq!(commands[1].tokens, vec!["grep", "test"]);
+        assert_eq!(commands[1].piped_output, false);
+        assert_eq!(commands[1].piped_input, true);
     }
 }
