@@ -114,7 +114,6 @@ fn main() -> io::Result<()> {
 
         user_input_history.push(user_input.to_owned());
         input_history_index = user_input_history.len();
-        //println!("index = {}", input_history_index);
     }
 }
 
@@ -242,5 +241,90 @@ fn change_dir(command: SingleCommand) {
 
     if let Err(e) = env::set_current_dir(command.tokens[1].as_str()) {
         eprintln!("Error: {}", e);
+    }
+}
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_piped_parse_user_input() {
+        let user_input_test: &str = "ls | grep test";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+
+        assert_eq!(commands.len(), 2);
+        assert_eq!(commands[0].tokens, vec!["ls"]);
+        assert_eq!(commands[0].piped_output, true);
+        assert_eq!(commands[0].piped_input, false);
+        assert_eq!(commands[1].tokens, vec!["grep", "test"]);
+        assert_eq!(commands[1].piped_output, false);
+        assert_eq!(commands[1].piped_input, true);
+    }
+
+    #[test]
+    fn test_directed_output_parse_user_input(){
+        let user_input_test: &str = "ls -l > ls.txt";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].tokens, vec!["ls", "-l"]);
+        assert_eq!(commands[0].directed_input, false);
+        assert_eq!(commands[0].input_filename, None);
+        assert_eq!(commands[0].directed_output, true);
+        assert_eq!(commands[0].output_filename, Some("ls.txt".to_owned()));
+        assert_eq!(commands[0].piped_output, false);
+        assert_eq!(commands[0].piped_input, false);
+    }
+
+    #[test]
+    fn test_directed_input_parse_user_input(){
+        let user_input_test: &str = "sort < unsorted.txt";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].tokens, vec!["sort"]);
+        assert_eq!(commands[0].directed_input, true);
+        assert_eq!(commands[0].input_filename, Some("unsorted.txt".to_owned()));
+        assert_eq!(commands[0].directed_output, false);
+        assert_eq!(commands[0].output_filename, None);
+        assert_eq!(commands[0].piped_output, false);
+        assert_eq!(commands[0].piped_input, false);
+    }
+
+    #[test]
+    fn test_writing_to_file(){
+        let user_input_test: &str = "sort < ./test/unsorted_skyrim.test > ./test/sorted_in_code.test";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].tokens, vec!["sort"]);
+        assert_eq!(commands[0].directed_input, true);
+        assert_eq!(commands[0].input_filename, Some("./test/unsorted_skyrim.test".to_owned()));
+        assert_eq!(commands[0].directed_output, true);
+        assert_eq!(commands[0].output_filename, Some("./test/sorted_in_code.test".to_owned()));
+        assert_eq!(commands[0].piped_output, false);
+        assert_eq!(commands[0].piped_input, false);
+
+        execute_commands(commands);
+
+        let unsorted_content = fs::read_to_string("./test/sorted_skyrim.test")
+            .expect("Unable to read sorted file");
+        
+        let sorted_content = fs::read_to_string("./test/sorted_in_code.test")
+            .expect("Unable to read sorted file");
+
+        assert_eq!(unsorted_content, sorted_content);
+
+        fs::remove_file("./test/sorted_in_code.test").expect("Unable to delete sorted file");
+        assert!(fs::metadata("./test/sorted_in_code.test").is_err(), "Sorted file should have been deleted");
     }
 }
