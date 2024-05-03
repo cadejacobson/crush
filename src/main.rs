@@ -249,11 +249,12 @@ mod tests{
     use super::*;
 
     #[test]
-    fn test_parse_user_input() {
+    fn test_piped_parse_user_input() {
         let user_input_test = "ls | grep test";
 
         let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
         let commands = parse_user_input(tokens);
+
         assert_eq!(commands.len(), 2);
         assert_eq!(commands[0].tokens, vec!["ls"]);
         assert_eq!(commands[0].piped_output, true);
@@ -261,5 +262,39 @@ mod tests{
         assert_eq!(commands[1].tokens, vec!["grep", "test"]);
         assert_eq!(commands[1].piped_output, false);
         assert_eq!(commands[1].piped_input, true);
+    }
+
+    #[test]
+    fn test_directed_output_parse_user_input(){
+        let user_input_test = "ls -l > ls.txt";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].tokens, vec!["ls", "-l"]);
+        assert_eq!(commands[0].directed_input, false);
+        assert_eq!(commands[0].input_filename, None);
+        assert_eq!(commands[0].directed_output, true);
+        assert_eq!(commands[0].output_filename, Some("ls.txt".to_owned()));
+        assert_eq!(commands[0].piped_output, false);
+        assert_eq!(commands[0].piped_input, false);
+    }
+
+    #[test]
+    fn test_directed_input_parse_user_input(){
+        let user_input_test = "sort < unsorted.txt";
+
+        let tokens: Vec<&str> = user_input_test.split_whitespace().collect();
+        let commands = parse_user_input(tokens);
+        
+        assert_eq!(commands.len(), 1);
+        assert_eq!(commands[0].tokens, vec!["sort"]);
+        assert_eq!(commands[0].directed_input, true);
+        assert_eq!(commands[0].input_filename, Some("unsorted.txt".to_owned()));
+        assert_eq!(commands[0].directed_output, false);
+        assert_eq!(commands[0].output_filename, None);
+        assert_eq!(commands[0].piped_output, false);
+        assert_eq!(commands[0].piped_input, false);
     }
 }
